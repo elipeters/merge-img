@@ -21,13 +21,26 @@ $ npm install merge-img
 ## Usage
 
 ```javascript
-import mergeImg from 'merge-img';
+const mergeImg = require('merge-img'),
+      Jimp = require('jimp');
+
+var widths = [];
 
 mergeImg(['image-1.png', 'image-2.jpg'])
-  .then((img) => {
-    // Save image as file
-    img.write('out.png', () => console.log('done'));
-  });
+      .then((data) => {       
+        
+        widths = data.widthArray;  
+        
+        // Get image as `Buffer`
+        data.img.getBuffer(Jimp.MIME_JPEG, (err, buffer) => {
+          var pageBufferStream = new stream.PassThrough();
+          pageBufferStream.end( buffer );
+          
+          console.log(buffer,widths);
+
+        }); //end img.getBuffer
+      }); //end then
+      
 ```
 
 ## API
