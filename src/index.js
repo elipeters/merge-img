@@ -1,15 +1,47 @@
-import isPlainObj from 'is-plain-obj';
-import Jimp, {read} from 'jimp';
-import alignImage from './utils/alignImage';
-import calcMargin from './utils/calcMargin';
+'use strict';
 
-export default function mergeImg(images, {
-  direction = false,
-  color = 0x00000000,
-  align = 'start',
-  offset = 0,
-  margin,
-} = {}) {
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+exports.default = mergeImg;
+
+var _isPlainObj = require('is-plain-obj');
+
+var _isPlainObj2 = _interopRequireDefault(_isPlainObj);
+
+var _jimp = require('jimp');
+
+var _jimp2 = _interopRequireDefault(_jimp);
+
+var _alignImage = require('./utils/alignImage');
+
+var _alignImage2 = _interopRequireDefault(_alignImage);
+
+var _calcMargin2 = require('./utils/calcMargin');
+
+var _calcMargin3 = _interopRequireDefault(_calcMargin2);
+
+var widthArray = [];
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+function mergeImg(images) {
+  var _ref = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {},
+      _ref$direction = _ref.direction,
+      direction = _ref$direction === undefined ? false : _ref$direction,
+      _ref$color = _ref.color,
+      color = _ref$color === undefined ? 0x00000000 : _ref$color,
+      _ref$align = _ref.align,
+      align = _ref$align === undefined ? 'start' : _ref$align,
+      _ref$offset = _ref.offset,
+      offset = _ref$offset === undefined ? 0 : _ref$offset,
+      margin = _ref.margin;
+
   if (!Array.isArray(images)) {
     throw new TypeError('`images` must be an array that contains images');
   }
@@ -18,69 +50,139 @@ export default function mergeImg(images, {
     throw new Error('At least `images` must contain more than one image');
   }
 
-  const processImg = (img) => {
-    if (isPlainObj(img)) {
-      const {src, offsetX, offsetY} = img;
+  widthArray = [];
+  
+  var processImg = function processImg(img) {
+    if ((0, _isPlainObj2.default)(img)) {
+      var src = img.src,
+          offsetX = img.offsetX,
+          offsetY = img.offsetY;
 
-      return read(src)
-        .then((imgObj) => ({
+
+      return (0, _jimp.read)(src).then(function (imgObj) {
+        return {
           img: imgObj,
           offsetX,
-          offsetY,
-        }));
+          offsetY
+        };
+      });
     }
 
-    return read(img).then((imgObj) => ({img: imgObj}));
+    return (0, _jimp.read)(img).then(function (imgObj) {
+      return { img: imgObj };
+    });
   };
 
-  return Promise.all(images.map(processImg))
-    .then((imgs) => {
-      let totalX = 0;
-      let totalY = 0;
+  return Promise.all(images.map(processImg)).then(function (imgs) {
+    var totalX = 0;
+    var totalY = 0;
 
-      const imgData = imgs.reduce((res, {img, offsetX = 0, offsetY = 0}) => {
-        const {bitmap: {width, height}} = img;
+    var imgData = imgs.reduce(function (res, _ref2) {
+      var img = _ref2.img,
+          _ref2$offsetX = _ref2.offsetX,
+          offsetX = _ref2$offsetX === undefined ? 0 : _ref2$offsetX,
+          _ref2$offsetY = _ref2.offsetY,
+          offsetY = _ref2$offsetY === undefined ? 0 : _ref2$offsetY;
+      var _img$bitmap = img.bitmap,
+          width = _img$bitmap.width,
+          height = _img$bitmap.height;
+      
+      widthArray.push(width);
 
-        res.push({
-          img,
-          x: totalX + offsetX,
-          y: totalY + offsetY,
-          offsetX,
-          offsetY,
-        });
+      res.push({
+        img,
+        x: totalX + offsetX,
+        y: totalY + offsetY,
+        offsetX,
+        offsetY
+      });
 
-        totalX += width + offsetX;
-        totalY += height + offsetY;
+      totalX += width + offsetX;
+      totalY += height + offsetY;
 
-        return res;
-      }, []);
+      return res;
+    }, []);
 
-      const {top, right, bottom, left} = calcMargin(margin);
-      const marginTopBottom = top + bottom;
-      const marginRightLeft = right + left;
+    var _calcMargin = (0, _calcMargin3.default)(margin),
+        top = _calcMargin.top,
+        right = _calcMargin.right,
+        bottom = _calcMargin.bottom,
+        left = _calcMargin.left;
 
-      const totalWidth = direction
-        ? Math.max(...imgData.map(({img: {bitmap: {width}}, offsetX}) => width + offsetX))
-        : imgData.reduce((res, {img: {bitmap: {width}}, offsetX}, index) => res + width + offsetX + (Number(index > 0) * offset), 0);
+    var marginTopBottom = top + bottom;
+    var marginRightLeft = right + left;
 
-      const totalHeight = direction
-        ? imgData.reduce((res, {img: {bitmap: {height}}, offsetY}, index) => res + height + offsetY + (Number(index > 0) * offset), 0)
-        : Math.max(...imgData.map(({img: {bitmap: {height}}, offsetY}) => height + offsetY));
+    var totalWidth = direction ? Math.max.apply(Math, _toConsumableArray(imgData.map(function (_ref3) {
+      var width = _ref3.img.bitmap.width,
+          offsetX = _ref3.offsetX;
+      return width + offsetX;
+    }))) : imgData.reduce(function (res, _ref4, index) {
+      var width = _ref4.img.bitmap.width,
+          offsetX = _ref4.offsetX;
+      return res + width + offsetX + Number(index > 0) * offset;
+    }, 0);
 
-      const baseImage = new Jimp(totalWidth + marginRightLeft, totalHeight + marginTopBottom, color);
+    var totalHeight = direction ? imgData.reduce(function (res, _ref5, index) {
+      var height = _ref5.img.bitmap.height,
+          offsetY = _ref5.offsetY;
+      return res + height + offsetY + Number(index > 0) * offset;
+    }, 0) : Math.max.apply(Math, _toConsumableArray(imgData.map(function (_ref6) {
+      var height = _ref6.img.bitmap.height,
+          offsetY = _ref6.offsetY;
+      return height + offsetY;
+    })));
 
-      // Fallback for `Array#entries()`
-      const imgDataEntries = imgData.map((data, index) => [index, data]);
+    var baseImage = new _jimp2.default(totalWidth + marginRightLeft, totalHeight + marginTopBottom, color);
 
-      for (const [index, {img, x, y, offsetX, offsetY}] of imgDataEntries) {
-        const {bitmap: {width, height}} = img;
-        const [px, py] = direction
-          ? [alignImage(totalWidth, width, align) + offsetX, y + (index * offset)]
-          : [x + (index * offset), alignImage(totalHeight, height, align) + offsetY];
+    // Fallback for `Array#entries()`
+    var imgDataEntries = imgData.map(function (data, index) {
+      return [index, data];
+    });
+
+    var _iteratorNormalCompletion = true;
+    var _didIteratorError = false;
+    var _iteratorError = undefined;
+
+    try {
+      for (var _iterator = imgDataEntries[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+        var _ref7 = _step.value;
+
+        var _ref8 = _slicedToArray(_ref7, 2);
+
+        var index = _ref8[0];
+        var _ref8$ = _ref8[1];
+        var img = _ref8$.img;
+        var x = _ref8$.x;
+        var y = _ref8$.y;
+        var offsetX = _ref8$.offsetX;
+        var offsetY = _ref8$.offsetY;
+        var _img$bitmap2 = img.bitmap,
+            width = _img$bitmap2.width,
+            height = _img$bitmap2.height;
+
+        var _ref9 = direction ? [(0, _alignImage2.default)(totalWidth, width, align) + offsetX, y + index * offset] : [x + index * offset, (0, _alignImage2.default)(totalHeight, height, align) + offsetY],
+            _ref10 = _slicedToArray(_ref9, 2),
+            px = _ref10[0],
+            py = _ref10[1];
 
         baseImage.composite(img, px + left, py + top);
       }
-
-      return baseImage;
-    });
+    } catch (err) {
+      _didIteratorError = true;
+      _iteratorError = err;
+    } finally {
+      try {
+        if (!_iteratorNormalCompletion && _iterator.return) {
+          _iterator.return();
+        }
+      } finally {
+        if (_didIteratorError) {
+          throw _iteratorError;
+        }
+      }
+    }
+//    sails.log('setMergeCovers',widthArray);
+    return {img: baseImage, widthArray: widthArray};
+  });
 }
+module.exports = exports['default'];
